@@ -13,12 +13,14 @@ def finetune_model():
         learning_rate=2e-5,
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
-        num_train_epochs=3,
+        num_train_epochs=1, # Reduced for faster training
         weight_decay=0.01,
-        save_total_limit=2, # Only last 2 models are saved.
+        save_total_limit=1, # Only last model is saved.
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
+        logging_steps=10, # Log less frequently
+        save_steps=10, # Save less frequently
     )
 
     trainer = Trainer(
