@@ -1,7 +1,7 @@
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
-def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128):
+def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128, train_size=100, eval_size=10):
     # Load the dataset
     print("Loading dataset...")
     dataset = load_dataset("arxiv_daily")
