@@ -1,5 +1,5 @@
 from transformers import AutoModelForCausalLM, TrainingArguments, Trainer
-from prepare_data import prepare_data
+from .prepare_data import prepare_data
 
 def finetune_model():
     model_checkpoint = "gpt2"
