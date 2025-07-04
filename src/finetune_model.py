@@ -25,16 +25,19 @@ def finetune_model():
         save_steps=10, # Save less frequently
     )
 
-    # Convert IterableDataset to a list if needed for indexing
-    train_dataset = list(tokenized_datasets["train"])
-    eval_dataset = list(tokenized_datasets["validation"])
+    # Ensure train_dataset and eval_dataset are Dataset objects, not DatasetDict
+    if hasattr(tokenized_datasets, "train") and hasattr(tokenized_datasets, "validation"):
+        train_dataset = tokenized_datasets.train
+        eval_dataset = tokenized_datasets.validation
+    else:
+        train_dataset = tokenized_datasets
+        eval_dataset = None
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        tokenizer=tokenizer,
     )
 
     print("Starting model fine-tuning...")
