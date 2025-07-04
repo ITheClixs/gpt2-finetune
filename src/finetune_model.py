@@ -1,4 +1,6 @@
-from transformers import AutoModelForCausalLM, TrainingArguments, Trainer
+from transformers import AutoModelForCausalLM
+from transformers.trainer import Trainer
+from transformers.training_args import TrainingArguments
 from .prepare_data import prepare_data
 
 def finetune_model():
@@ -9,7 +11,7 @@ def finetune_model():
 
     training_args = TrainingArguments(
         output_dir="./results",
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         learning_rate=2e-5,
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
@@ -23,11 +25,15 @@ def finetune_model():
         save_steps=10, # Save less frequently
     )
 
+    # Convert IterableDataset to a list if needed for indexing
+    train_dataset = list(tokenized_datasets["train"])
+    eval_dataset = list(tokenized_datasets["validation"])
+
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["validation"],
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
         tokenizer=tokenizer,
     )
 
