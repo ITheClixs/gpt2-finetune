@@ -34,6 +34,10 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
         remove_columns=["article", "abstract", "id"]
     )
 
+    # Limit dataset size for faster training
+    tokenized_datasets["train"] = tokenized_datasets["train"].select(range(train_size))
+    tokenized_datasets["validation"] = tokenized_datasets["validation"].select(range(eval_size))
+
     print("Dataset preparation complete.")
     return tokenized_datasets, tokenizer
 
