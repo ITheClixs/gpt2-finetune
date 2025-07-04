@@ -26,12 +26,18 @@ def finetune_model():
     )
 
     # Ensure train_dataset and eval_dataset are Dataset objects, not DatasetDict
-    if hasattr(tokenized_datasets, "train") and hasattr(tokenized_datasets, "validation"):
-        train_dataset = tokenized_datasets.train
-        eval_dataset = tokenized_datasets.validation
+    from datasets import Dataset
+
+    if isinstance(tokenized_datasets, dict):
+        train_dataset = tokenized_datasets.get("train", None)
+        eval_dataset = tokenized_datasets.get("validation", None)
     else:
         train_dataset = tokenized_datasets
         eval_dataset = None
+
+    # Ensure train_dataset is of type datasets.arrow_dataset.Dataset
+    if train_dataset is None or not isinstance(train_dataset, Dataset):
+        raise ValueError("train_dataset must be a datasets.arrow_dataset.Dataset instance.")
 
     trainer = Trainer(
         model=model,
