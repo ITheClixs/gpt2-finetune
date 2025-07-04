@@ -3,7 +3,7 @@ from .prepare_data import prepare_data
 
 def finetune_model():
     model_checkpoint = "gpt2"
-    tokenized_datasets, tokenizer = prepare_data(model_checkpoint=model_checkpoint)
+    tokenized_datasets, tokenizer = prepare_data(model_checkpoint=model_checkpoint, train_size=100, eval_size=10)
 
     model = AutoModelForCausalLM.from_pretrained(model_checkpoint)
 
