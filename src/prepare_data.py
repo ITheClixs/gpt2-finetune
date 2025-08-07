@@ -4,9 +4,9 @@ from transformers import AutoTokenizer
 def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128, train_size=100, eval_size=10):
     # Load the dataset
     print("Loading dataset...")
-    # Using 'scientific_papers' with the 'arxiv' subset.
-    # trust_remote_code=True is required to use the latest dataset script.
-    dataset = load_dataset("scientific_papers", "arxiv", streaming=False, trust_remote_code=True)
+    # Using 'cnn_dailymail' as a replacement for the deprecated 'scientific_papers' dataset.
+    # This is a standard dataset for summarization tasks.
+    dataset = load_dataset("cnn_dailymail", "3.0.0", streaming=False)
 
     # Load tokenizer
     print(f"Loading tokenizer for {model_checkpoint}...")
@@ -16,15 +16,16 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
         tokenizer.pad_token = tokenizer.eos_token
 
     def preprocess_function(examples):
-        # Tokenize the input (article) and target (abstract)
+        # Tokenize the input (article) and target (highlights)
         model_inputs = tokenizer(
             examples["article"],
             max_length=max_input_length,
             truncation=True,
             padding="max_length"
         )
+        # The target column in cnn_dailymail is 'highlights'
         labels = tokenizer(
-            examples["abstract"],
+            examples["highlights"],
             max_length=max_target_length,
             truncation=True,
             padding="max_length"
@@ -33,12 +34,12 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
         return model_inputs
 
     print("Preprocessing dataset...")
-    # The scientific_papers dataset contains 'article', 'abstract', and 'section_names'.
+    # The cnn_dailymail dataset contains 'article', 'highlights', and 'id'.
     # We remove the original columns after tokenization.
     tokenized_datasets = dataset.map(
         preprocess_function,
         batched=True,
-        remove_columns=["article", "abstract", "section_names"]
+        remove_columns=["article", "highlights", "id"]
     )
 
 
