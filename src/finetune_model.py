@@ -39,6 +39,10 @@ def finetune_model():
     if train_dataset is None or not isinstance(train_dataset, Dataset):
         raise ValueError("train_dataset must be a datasets.arrow_dataset.Dataset instance.")
 
+    # Ensure eval_dataset is either None or a Dataset instance
+    if eval_dataset is not None and not isinstance(eval_dataset, Dataset):
+        eval_dataset = None
+
     trainer = Trainer(
         model=model,
         args=training_args,
