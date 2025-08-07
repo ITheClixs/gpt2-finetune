@@ -4,10 +4,9 @@ from transformers import AutoTokenizer
 def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128, train_size=100, eval_size=10):
     # Load the dataset
     print("Loading dataset...")
-    # The 'arxiv_daily' dataset name seems to be incorrect or unavailable.
-    # Using 'scientific_papers' with the 'arxiv' subset as a standard replacement.
-    # This dataset contains arXiv articles and abstracts.
-    dataset = load_dataset("scientific_papers", "arxiv", streaming=False)
+    # Using 'scientific_papers' with the 'arxiv' subset.
+    # trust_remote_code=True is required to use the latest dataset script.
+    dataset = load_dataset("scientific_papers", "arxiv", streaming=False, trust_remote_code=True)
 
     # Load tokenizer
     print(f"Loading tokenizer for {model_checkpoint}...")
