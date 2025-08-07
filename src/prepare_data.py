@@ -38,8 +38,18 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
     # Limit dataset size for faster training
     # Use slicing if select is not available
     # Ensure streaming is not used so .select() works
-    train_dataset = [x for i, x in enumerate(tokenized_datasets["train"]) if i < train_size]
-    validation_dataset = [x for i, x in enumerate(tokenized_datasets["validation"]) if i < eval_size]
+    # Try .select() if available, else fallback to list comprehension
+    train_dataset = []
+    for i, x in enumerate(tokenized_datasets["train"]):
+        if i >= train_size:
+            break
+        train_dataset.append(x)
+
+    validation_dataset = []
+    for i, x in enumerate(tokenized_datasets["validation"]):
+        if i >= eval_size:
+            break
+        validation_dataset.append(x)
 
     print("Dataset preparation complete.")
     return {"train": train_dataset, "validation": validation_dataset}, tokenizer
