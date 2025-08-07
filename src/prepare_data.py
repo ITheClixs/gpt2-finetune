@@ -44,8 +44,21 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
 
 
     # Limit dataset size for faster training using the .select() method for efficiency.
-    train_dataset = tokenized_datasets["train"].select(range(train_size))
-    validation_dataset = tokenized_datasets["validation"].select(range(eval_size))
+    # For streaming/IterableDataset, use .take() directly.
+    if isinstance(tokenized_datasets, DatasetDict):
+        if hasattr(tokenized_datasets["train"], "select"):
+            train_dataset = tokenized_datasets["train"].select(range(train_size))
+            validation_dataset = tokenized_datasets["validation"].select(range(eval_size))
+        elif isinstance(tokenized_datasets["train"], list):
+            train_dataset = tokenized_datasets["train"][:train_size]
+            validation_dataset = tokenized_datasets["validation"][:eval_size]
+        else:
+            train_dataset = tokenized_datasets["train"].take(train_size)
+            validation_dataset = tokenized_datasets["validation"].take(eval_size)
+    else:
+        # For IterableDataset, use .take() directly on the dataset object
+        train_dataset = tokenized_datasets.take(train_size)
+        validation_dataset = tokenized_datasets.take(eval_size)
 
     print("Dataset preparation complete.")
     return DatasetDict({"train": train_dataset, "validation": validation_dataset}), tokenizer
