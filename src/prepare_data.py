@@ -4,7 +4,7 @@ from transformers import AutoTokenizer
 def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128, train_size=100, eval_size=10):
     # Load the dataset
     print("Loading dataset...")
-    dataset = load_dataset("arxiv_daily")
+    dataset = load_dataset("arxiv_daily", streaming=False)
 
     # Load tokenizer
     print(f"Loading tokenizer for {model_checkpoint}...")
@@ -37,8 +37,9 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
 
     # Limit dataset size for faster training
     # Use slicing if select is not available
-    train_dataset = list(tokenized_datasets["train"])[:train_size]
-    validation_dataset = list(tokenized_datasets["validation"])[:eval_size]
+    # Ensure streaming is not used so .select() works
+    train_dataset = [x for i, x in enumerate(tokenized_datasets["train"]) if i < train_size]
+    validation_dataset = [x for i, x in enumerate(tokenized_datasets["validation"]) if i < eval_size]
 
     print("Dataset preparation complete.")
     return {"train": train_dataset, "validation": validation_dataset}, tokenizer
