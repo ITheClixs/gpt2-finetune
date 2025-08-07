@@ -1,14 +1,20 @@
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer
 
 def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_length=128, train_size=100, eval_size=10):
     # Load the dataset
     print("Loading dataset...")
-    dataset = load_dataset("arxiv_daily", streaming=False)
+    # The 'arxiv_daily' dataset name seems to be incorrect or unavailable.
+    # Using 'scientific_papers' with the 'arxiv' subset as a standard replacement.
+    # This dataset contains arXiv articles and abstracts.
+    dataset = load_dataset("scientific_papers", "arxiv", streaming=False)
 
     # Load tokenizer
     print(f"Loading tokenizer for {model_checkpoint}...")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+    # Set padding token for gpt2 if it's not already set.
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
 
     def preprocess_function(examples):
         # Tokenize the input (article) and target (abstract)
@@ -28,31 +34,21 @@ def prepare_data(model_checkpoint="gpt2", max_input_length=1024, max_target_leng
         return model_inputs
 
     print("Preprocessing dataset...")
+    # The scientific_papers dataset contains 'article', 'abstract', and 'section_names'.
+    # We remove the original columns after tokenization.
     tokenized_datasets = dataset.map(
         preprocess_function,
         batched=True,
-        remove_columns=["article", "abstract", "id"]
+        remove_columns=["article", "abstract", "section_names"]
     )
 
 
-    # Limit dataset size for faster training
-    # Use slicing if select is not available
-    # Ensure streaming is not used so .select() works
-    # Try .select() if available, else fallback to list comprehension
-    train_dataset = []
-    for i, x in enumerate(tokenized_datasets["train"]):
-        if i >= train_size:
-            break
-        train_dataset.append(x)
-
-    validation_dataset = []
-    for i, x in enumerate(tokenized_datasets["validation"]):
-        if i >= eval_size:
-            break
-        validation_dataset.append(x)
+    # Limit dataset size for faster training using the .select() method for efficiency.
+    train_dataset = tokenized_datasets["train"].select(range(train_size))
+    validation_dataset = tokenized_datasets["validation"].select(range(eval_size))
 
     print("Dataset preparation complete.")
-    return {"train": train_dataset, "validation": validation_dataset}, tokenizer
+    return DatasetDict({"train": train_dataset, "validation": validation_dataset}), tokenizer
 
 if __name__ == "__main__":
     tokenized_datasets, tokenizer = prepare_data()
