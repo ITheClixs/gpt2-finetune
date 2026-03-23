@@ -14,12 +14,16 @@ def prepare_data(
     max_target_length=128,
     train_size=100,
     eval_size=10,
+    local_files_only=False,
 ):
     print("Loading dataset...")
     dataset = load_dataset(dataset_name, dataset_config, streaming=False)
 
     print(f"Loading tokenizer for {model_checkpoint}...")
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_checkpoint,
+        local_files_only=local_files_only,
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -90,6 +94,6 @@ def prepare_data(
 
 
 if __name__ == "__main__":
-    tokenized_datasets, tokenizer = prepare_data()
+    tokenized_datasets, tokenizer = prepare_data(local_files_only=True)
     print(tokenized_datasets)
     print(f"Tokenizer vocabulary size: {len(tokenizer)}")
