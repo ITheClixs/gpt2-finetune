@@ -1,95 +1,51 @@
-# GPT-2 Fine-tuning for Scientific Paper Summarization
+# GPT-2 Fine-Tuning For Summarization
 
-This project demonstrates how to fine-tune a GPT-2 model for scientific paper summarization using a minimal dataset. It's optimized for quick execution on resource-constrained environments like a MacBook Air M4 without a dedicated GPU.
+This project fine-tunes a GPT-2 causal language model on a very small subset of the Hugging Face `cnn_dailymail` dataset. It is a minimal CPU-friendly training pipeline intended to demonstrate fine-tuning mechanics, not to produce a strong summarization model.
 
-## Overview
+## What It Does
 
-The primary goal is to provide a basic example of fine-tuning a pre-trained GPT-2 model to generate summaries of scientific papers. Due to computational limitations and time constraints (aiming for ~30 minutes of training), the model is trained on a very small subset of the `arxiv_daily` dataset. This setup is intended for demonstrating the fine-tuning workflow rather than achieving high-quality summarization.
+Running `python main.py`:
 
-## Features
+1. Loads `cnn_dailymail` version `3.0.0`.
+2. Selects 100 training articles and 10 validation articles.
+3. Formats each example as a causal language modeling prompt:
 
-*   **Minimal Dataset Fine-tuning:** Configured to train on a small subset of the `arxiv_daily` dataset for rapid iteration.
-*   **Hugging Face Transformers:** Leverages the powerful `transformers` library for model loading, tokenization, and training.
-*   **Modular Structure:** Organized into a `src` directory for better code management.
+   ```text
+   Summarize the following article:
+
+   <article>
+
+   Summary:
+   <highlights>
+   ```
+
+4. Masks the prompt portion in the labels so loss is computed only on the summary tokens.
+5. Fine-tunes GPT-2 for 1 epoch.
+6. Saves the trained model to `./fine_tuned_gpt2_summarizer`.
 
 ## Requirements
 
-*   Python 3.8+
-*   `transformers`
-*   `datasets`
-*   `torch`
+- Python 3.8+
+- `accelerate`
+- `transformers`
+- `datasets`
+- `torch`
 
-### Python Dependencies
-
-Install dependencies using `pip`:
+Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Project Structure
+## Usage
 
-```
-gpt2-finetune/
-├── src/
-│   ├── __init__.py           # Makes `src` a Python package
-│   ├── prepare_data.py       # Handles dataset loading and preprocessing
-│   └── finetune_model.py     # Contains the fine-tuning logic for GPT-2
-├── main.py                   # Main entry point to start fine-tuning
-└── requirements.txt          # Lists Python dependencies
+```bash
+cd /path/to/gpt2-finetune
+python main.py
 ```
 
-## How to Use
+## Notes
 
-Follow these steps to set up the environment and run the fine-tuning process:
-
-1.  **Navigate to the project directory:**
-
-    ```bash
-    cd /path/to/gpt2-finetune
-    ```
-
-2.  **Create and activate a virtual environment (recommended):**
-
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate    # On Windows use `venv\Scripts\activate`
-    ```
-
-3.  **Install Python dependencies:**
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Run the fine-tuning script:**
-
-    ```bash
-    python main.py
-    ```
-
-    This command will:
-
-    *   Download the `arxiv_daily` dataset (if not already cached).
-    *   Preprocess a small subset of the dataset (100 training examples, 10 validation examples).
-    *   Load a pre-trained GPT-2 model.
-    *   Fine-tune the model for 1 epoch.
-    *   Save the fine-tuned model and tokenizer to `./fine_tuned_gpt2_summarizer`.
-
-## Important Notes
-
-*   **Training Time:** The fine-tuning process is configured to be very fast (aiming for under 30 minutes on a modern CPU) by using a drastically reduced dataset size and fewer training epochs. This is ideal for quick demonstrations and testing the pipeline.
-*   **Summarization Quality:** Due to the minimal training data, the resulting fine-tuned model will have very limited summarization capabilities. It is not expected to produce high-quality, coherent summaries for real-world use cases.
-*   **Computational Resources:** While optimized for CPU, fine-tuning large language models can still be resource-intensive. Monitor your system's resource usage during the process.
-
-## Next Steps
-
-After successful fine-tuning, you can proceed to build a simple application to load and use your fine-tuned model for generating summaries.
-
-## License
-
-This project is open-source and available for educational and personal use.
-
-## Contributions
-
-Contributions and improvements are welcome. Feel free to fork the repository and submit pull requests.
+- The code expects the dataset and model to be available through Hugging Face, unless they are already cached locally.
+- Training is intentionally small and fast, so summary quality will be limited.
+- The preprocessing is designed for GPT-2 style causal LM training, not encoder-decoder summarization.
