@@ -1,9 +1,32 @@
+from requests import RequestException
 from datasets import DatasetDict, load_dataset
 from transformers import AutoTokenizer
 
 
 DEFAULT_DATASET_NAME = "cnn_dailymail"
 DEFAULT_DATASET_CONFIG = "3.0.0"
+PROMPT_PREFIX = "Summarize the following article:\n\n"
+SUMMARY_PREFIX = "\n\nSummary:\n"
+
+
+def build_prompt(article):
+    return f"{PROMPT_PREFIX}{article}{SUMMARY_PREFIX}"
+
+
+def load_tokenizer(model_checkpoint, local_files_only):
+    try:
+        return AutoTokenizer.from_pretrained(
+            model_checkpoint,
+            local_files_only=local_files_only,
+        )
+    except (OSError, RequestException) as exc:
+        if local_files_only:
+            raise
+        print(f"Falling back to cached tokenizer for {model_checkpoint}: {exc}")
+        return AutoTokenizer.from_pretrained(
+            model_checkpoint,
+            local_files_only=True,
+        )
 
 
 def prepare_data(
@@ -15,15 +38,13 @@ def prepare_data(
     train_size=100,
     eval_size=10,
     local_files_only=False,
+    return_raw=False,
 ):
     print("Loading dataset...")
     dataset = load_dataset(dataset_name, dataset_config, streaming=False)
 
     print(f"Loading tokenizer for {model_checkpoint}...")
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_checkpoint,
-        local_files_only=local_files_only,
-    )
+    tokenizer = load_tokenizer(model_checkpoint, local_files_only)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -40,10 +61,8 @@ def prepare_data(
         input_ids_batch = []
         attention_masks_batch = []
         labels_batch = []
-        prompt_prefix = "Summarize the following article:\n\n"
-        summary_prefix = "\n\nSummary:\n"
-        prompt_prefix_ids = tokenizer(prompt_prefix, add_special_tokens=False)["input_ids"]
-        summary_prefix_ids = tokenizer(summary_prefix, add_special_tokens=False)["input_ids"]
+        prompt_prefix_ids = tokenizer(PROMPT_PREFIX, add_special_tokens=False)["input_ids"]
+        summary_prefix_ids = tokenizer(SUMMARY_PREFIX, add_special_tokens=False)["input_ids"]
 
         for article, highlights in zip(examples["article"], examples["highlights"]):
             summary_ids = tokenizer(
@@ -90,6 +109,8 @@ def prepare_data(
     )
 
     print("Dataset preparation complete.")
+    if return_raw:
+        return tokenized_datasets, tokenizer, dataset_subset
     return tokenized_datasets, tokenizer
 
 

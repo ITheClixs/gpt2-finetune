@@ -1,9 +1,60 @@
 import os
 
 import torch
+from requests import RequestException
 from transformers import AutoModelForCausalLM, Trainer, TrainingArguments, default_data_collator
 
-from .prepare_data import prepare_data
+from .prepare_data import build_prompt, prepare_data
+
+
+def print_sample_summary(model, tokenizer, raw_validation_dataset, max_length, max_target_length):
+    sample = raw_validation_dataset[0]
+    prompt = build_prompt(sample["article"])
+    prompt_max_length = max(1, max_length - max_target_length)
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=prompt_max_length,
+    )
+    inputs = {name: tensor.to(model.device) for name, tensor in inputs.items()}
+
+    with torch.no_grad():
+        generated_ids = model.generate(
+            **inputs,
+            max_new_tokens=max_target_length,
+            num_beams=4,
+            no_repeat_ngram_size=3,
+            early_stopping=True,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+
+    generated_summary = tokenizer.decode(
+        generated_ids[0][inputs["input_ids"].shape[1]:],
+        skip_special_tokens=True,
+    ).strip()
+
+    print("\nSample generated summary:")
+    print(generated_summary or "(empty)")
+    print("\nReference summary:")
+    print(sample["highlights"])
+
+
+def load_model(model_checkpoint, local_files_only):
+    try:
+        return AutoModelForCausalLM.from_pretrained(
+            model_checkpoint,
+            local_files_only=local_files_only,
+        )
+    except (OSError, RequestException) as exc:
+        if local_files_only:
+            raise
+        print(f"Falling back to cached model for {model_checkpoint}: {exc}")
+        return AutoModelForCausalLM.from_pretrained(
+            model_checkpoint,
+            local_files_only=True,
+        )
 
 
 def finetune_model(
@@ -22,19 +73,17 @@ def finetune_model(
             os.getenv("HF_HUB_OFFLINE") == "1" or os.getenv("TRANSFORMERS_OFFLINE") == "1"
         )
 
-    tokenized_datasets, tokenizer = prepare_data(
+    tokenized_datasets, tokenizer, raw_datasets = prepare_data(
         model_checkpoint=model_checkpoint,
         train_size=train_size,
         eval_size=eval_size,
         max_length=max_length,
         max_target_length=max_target_length,
         local_files_only=local_files_only,
+        return_raw=True,
     )
 
-    model = AutoModelForCausalLM.from_pretrained(
-        model_checkpoint,
-        local_files_only=local_files_only,
-    )
+    model = load_model(model_checkpoint, local_files_only)
     model.config.pad_token_id = tokenizer.pad_token_id
 
     training_args = TrainingArguments(
@@ -65,6 +114,14 @@ def finetune_model(
 
     print("Starting model fine-tuning...")
     trainer.train()
+
+    print_sample_summary(
+        trainer.model,
+        tokenizer,
+        raw_datasets["validation"],
+        max_length=max_length,
+        max_target_length=max_target_length,
+    )
 
     print(f"Saving fine-tuned model to {model_output_dir}...")
     trainer.save_model(model_output_dir)
