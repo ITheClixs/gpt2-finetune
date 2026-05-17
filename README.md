@@ -305,4 +305,4 @@ This path fine-tunes a GPT-2 style causal language model for summarization. It i
 
 ## Current Research Rule
 
-Full-scale model training, Hugging Face Jobs submission, or benchmark claims require an explicit experiment request. Bounded CPU smoke training is allowed for terminal verification when the dataset slice, config, checkpoint path, and metrics path are recorded.
+Full-scale model training, Hugging Face Jobs submission, or benchmark claims require an explicit experiment request. Bounded CPU smoke training is allowed for terminal verification when the dataset slice, config, checkpoint path, and metrics path are recorded. Entirely built on a Macbook Air without cloud compute.
